@@ -26,19 +26,32 @@
 
 package tech.napkin.mandelbrot;
 
-import javax.imageio.ImageIO;
+import ar.com.hjg.pngj.ImageInfo;
+import ar.com.hjg.pngj.ImageLineInt;
+import ar.com.hjg.pngj.PngWriter;
+import org.apache.commons.lang3.ArrayUtils;
+
 import java.awt.*;
-import java.awt.image.BufferedImage;
 import java.io.File;
-import java.io.IOException;
+import java.util.Arrays;
 
 public class Main {
-
-	public static void main(String[] args) {
+	// 2090mb
+	public static void main(String[] _args) {
 		System.out.println("Initializing...");
 
-		String filename;
+		final String[] args;
+		final String filename;
 		final double width, height, max_iterations;
+		// This stores the entire first half of the mandelbrot in memory and flips it around for the second time,
+		// drastically increasing memory usage but halving the required time.
+		// edit it actually only increases usage by like 5 mb
+		final boolean halveSpeed;
+
+		if (halveSpeed = Boolean.parseBoolean(_args[3])) {
+			_args[3] = _args[4];
+			args = Arrays.copyOfRange(_args, 0, 4);
+		} else args = _args;
 
 		if (args.length == 4) filename = args[3].endsWith(".png") ? args[3] : args[3] + ".png";
 		else if (args.length == 3) filename = "image.png";
@@ -63,16 +76,32 @@ public class Main {
 			max_iterations = conf[2];
 		}
 
-		BufferedImage image = new BufferedImage((int) width, (int) height, BufferedImage.TYPE_INT_RGB);
+		final ImageInfo imageInfo = new ImageInfo((int) width,
+				(int) height,
+				8, false);
+
+
+		PngWriter image = new PngWriter(new File(filename), imageInfo, true);
+
+		final Spinner<Character> spinner = new Spinner<>('|', '/', '—', '\\');
+
+		final int[][] scanlines = new int[(int) height / 2][(int) width * 3];
+
 
 		long totalRowTime = 0, totalColTime = 0;
 
+//		System.out.println(halveSpeed);
+
 		long start = System.nanoTime();
-		for (int row = 0; row < height; ++row) {
-			System.out.print("\rCalculating... " + Math.round(row / height * 100) + "%");
+		int row;
+		for (row = 0; row < (halveSpeed ? height / 2 + 1 : height); ++row) {
+//			System.out.print(new StringBuilder().append("\rCalculating... ").append(Math.round(row / height * 100)).append("%  ").toString());
+			System.out.print(new StringBuilder().append("\rCalculating... ").append(row + (halveSpeed ? 0 : 1)).append("/").append((int) height / (halveSpeed ? 2 : 1)).append("  ").toString());
 			long rowStart = System.nanoTime();
 			final double imaginary_c = (row - height / 2.0) * 4.0 / width;
+			int[] scanline = new int[(int) (width * 3)];
 			for (int col = 0; col < width; ++col) {
+				System.out.print(new StringBuilder().append("\b").append(spinner.next()).toString());
 				long colStart = System.nanoTime();
 				final double real_c = (col - width / 2.0) * 4.0 / width;
 
@@ -91,30 +120,56 @@ public class Main {
 //					double nsmooth = iterations + 1.0 - Math.log10(Math.log10(Math.abs(Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2))))) / Math.log10(2.0);
 
 //					Color c = Color.getHSBColor((float) Math.toRadians(0.95 + 10.0 * (iterations + 1.0 - Math.log10(Math.log10(Math.abs(Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2))))) / Math.log10(2.0))), 0.6f, 1);
-					image.setRGB(col, row, Color.getHSBColor((float) Math.toRadians(0.95 + 10.0 * (iterations + 1.0 - Math.log10(Math.log10(Math.abs(Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2))))) / Math.log10(2.0))), 0.6f, 1).getRGB());
+//					_image.setRGB(col, row, Color.getHSBColor((float) Math.toRadians(0.95 + 10.0 * (iterations + 1.0 - Math.log10(Math.log10(Math.abs(Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2))))) / Math.log10(2.0))), 0.6f, 1).getRGB());
 
+					Color color = Color.getHSBColor((float) Math.toRadians(0.95 + 10.0 * (iterations + 1.0 - Math.log10(Math.log10(Math.abs(Math.sqrt(Math.pow(x, 2) + Math.pow(y, 2))))) / Math.log10(2.0))), 0.6f, 1);
+
+					scanline[col * 3] = color.getRed();
+					scanline[col * 3 + 1] = color.getGreen();
+					scanline[col * 3 + 2] = color.getBlue();
+
+				} else {
+					scanline[col * 3] = scanline[col * 3 + 1] = scanline[col * 3 + 2] = 0;
 				}
 				long colEnd = System.nanoTime();
 				totalColTime += colEnd - colStart;
 			}
+			if (halveSpeed && row < height / 2) scanlines[row] = scanline;
+			image.writeRow(new ImageLineInt(imageInfo, scanline));
 			long rowEnd = System.nanoTime();
 			totalRowTime += rowEnd - rowStart;
 		}
+
+
+		if (halveSpeed) {
+			ArrayUtils.reverse(scanlines);
+			for (int[] scanline : Arrays.copyOfRange(scanlines, 0, scanlines.length - 1)) {
+				image.writeRow(new ImageLineInt(imageInfo, scanline));
+			}
+		}
+
 		long end = System.nanoTime();
 
-		System.out.println("\nFinished in " + Math.round((end - start) / 1000000d) / 1000d + "s");
+		System.out.println("\b \nFinished in " + Math.round((end - start) / 1000000d) / 1000d + "s");
 		System.out.println("Average row time: " + Math.round((totalRowTime / height) / 1000d) / 1000d + "ms");
 		System.out.println("Average pixel time: " + Math.round((totalColTime / (width * height))) / 1000d + "µs");
 
 
-		try {
-			assert ImageIO.write(image, "PNG", new File(filename));
-		} catch (IOException | AssertionError e) {
-			System.out.println("\nWriting image failed! Sorry :(");
-			if (!(e instanceof AssertionError)) e.printStackTrace();
-			System.exit(1);
-			return;
-		}
+
+
+
+//		try {
+//			File img = new File(filename);
+//			assert !img.exists() || img.delete();
+//			assert ImageIO.write(_image, "PNG", img);
+//		} catch (IOException | AssertionError e) {
+//			System.out.println("\nWriting image failed! Sorry :(");
+//			if (!(e instanceof AssertionError)) e.printStackTrace();
+//			System.exit(1);
+//			return;
+//		}
+
+		image.close();
 
 		System.out.println("\nSaved to " + filename);
 	}
@@ -124,3 +179,4 @@ public class Main {
 		System.exit(1);
 	}
 }
+
