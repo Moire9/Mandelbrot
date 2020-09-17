@@ -90,7 +90,7 @@ public class Main { // todo: make oop or something i dunno
 
 		PngWriter image = new PngWriter(new File(filename), imageInfo, true);
 
-		final Spinner<Character> spinner = new Spinner<>('|', '/', '—', '\\');
+		final Spinner<Character> spinner = new Spinner<>('|', '/', '\u2014', '\\');
 
 		final int[][] scanlines;
 
