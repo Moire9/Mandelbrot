@@ -35,8 +35,10 @@ import java.awt.*;
 import java.io.File;
 import java.util.Arrays;
 
-public class Main {
-	// 2090mb
+public class Main { // todo: make oop or something i dunno
+
+	//
+
 	public static void main(String[] _args) {
 		System.out.println("Initializing...");
 
@@ -45,9 +47,12 @@ public class Main {
 		final double width, height, max_iterations;
 		// This stores the entire first half of the mandelbrot in memory and flips it around for the second time,
 		// drastically increasing memory usage but halving the required time.
-		// edit it actually only increases usage by like 5 mb
+		// edit: it's like 25% more
 		final boolean halveSpeed;
 
+		// ==== CONFIG CODE ====
+
+		if (_args.length == 3) _args = new String[]{_args[0], _args[1], _args[2], "false"};
 		if (halveSpeed = Boolean.parseBoolean(_args[3])) {
 			_args[3] = _args[4];
 			args = Arrays.copyOfRange(_args, 0, 4);
@@ -76,6 +81,8 @@ public class Main {
 			max_iterations = conf[2];
 		}
 
+		// ==== INIT WRITING VARS ====
+
 		final ImageInfo imageInfo = new ImageInfo((int) width,
 				(int) height,
 				8, false);
@@ -85,14 +92,16 @@ public class Main {
 
 		final Spinner<Character> spinner = new Spinner<>('|', '/', '—', '\\');
 
-		final int[][] scanlines = new int[(int) height / 2][(int) width * 3];
+		final int[][] scanlines;
 
+		if (halveSpeed) scanlines = new int[(int) height / 2][(int) width * 3];
+		else scanlines = new int[0][]; // don't actually need this but java (or me) is stupid
 
 		long totalRowTime = 0, totalColTime = 0;
 
-//		System.out.println(halveSpeed);
+		// ==== RENDERING CODE ====
 
-		long start = System.nanoTime();
+ 		long start = System.nanoTime();
 		int row;
 		for (row = 0; row < (halveSpeed ? height / 2 + 1 : height); ++row) {
 //			System.out.print(new StringBuilder().append("\rCalculating... ").append(Math.round(row / height * 100)).append("%  ").toString());
@@ -154,20 +163,6 @@ public class Main {
 		System.out.println("Average row time: " + Math.round((totalRowTime / height) / 1000d) / 1000d + "ms");
 		System.out.println("Average pixel time: " + Math.round((totalColTime / (width * height))) / 1000d + "µs");
 
-
-
-
-
-//		try {
-//			File img = new File(filename);
-//			assert !img.exists() || img.delete();
-//			assert ImageIO.write(_image, "PNG", img);
-//		} catch (IOException | AssertionError e) {
-//			System.out.println("\nWriting image failed! Sorry :(");
-//			if (!(e instanceof AssertionError)) e.printStackTrace();
-//			System.exit(1);
-//			return;
-//		}
 
 		image.close();
 
