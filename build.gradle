@@ -28,6 +28,7 @@ dependencies {
 //    shadow("ar.com.hjg:pngj:2.1.0")
     implementation("ar.com.hjg:pngj:2.1.0")
     implementation("org.apache.commons:commons-lang3:3.11")
+    compile "com.beust:jcommander:1.78"
 }
 
 jar {
