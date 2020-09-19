@@ -1,42 +1,35 @@
-// This works but I have no idea why; I'm terrible with gradle, all I want to do is shadow the jar with pngj
-// and after a lot of messing around I figured out that this works
-
-buildscript {
-    dependencies {
-        classpath("ar.com.hjg:pngj:2.1.0")
-    }
-}
-
 plugins {
-    id "java"
-    id "com.github.johnrengelman.shadow" version "6.0.0"
+	id "java"
+	id "com.github.johnrengelman.shadow" version "6.0.0"
 }
-
-apply plugin: "com.github.johnrengelman.shadow"
 
 group "tech.napkin"
 version "1.0"
 
 repositories {
-    mavenCentral()
+	mavenCentral()
 }
 
 dependencies {
-    testCompile group: "junit", name: "junit", version: "4.12"
+	testCompile group: "junit", name: "junit", version: "4.12"
 
-    compile("org.jetbrains:annotations:19.0.0")
-//    shadow("ar.com.hjg:pngj:2.1.0")
-    implementation("ar.com.hjg:pngj:2.1.0")
-    implementation("org.apache.commons:commons-lang3:3.11")
-    compile "com.beust:jcommander:1.78"
+	implementation (
+			"org.jetbrains:annotations:19.0.0",
+			"org.apache.commons:commons-lang3:3.11",
+			"ar.com.hjg:pngj:2.1.0",
+			"com.beust:jcommander:1.78"
+	)
 }
 
 jar {
-    manifest {
-        attributes (
-                "Main-Class": "tech.napkin.mandelbrot.Main"
-        )
-    }
+	manifest {
+		attributes (
+				"Main-Class": "tech.napkin.mandelbrot.Main"
+		)
+	}
 }
 
-tasks.build.dependsOn(shadowJar)
+tasks.shadowJar {
+	//noinspection GrDeprecatedAPIUsage
+	classifier = null
+}
