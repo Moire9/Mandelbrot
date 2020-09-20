@@ -19,7 +19,7 @@ class Config {
 
 	public final Spinner<Character> spinner = new Spinner<>('|', '/', '\u2014', '\\');
 
-	public final int width, height, max_iterations;
+	public final int width, height, max_iterations, verbosity;
 	public final BigDecimal zoom, real, imaginary;
 	public final boolean usePercent, optimized;
 	public final String filename;
@@ -48,6 +48,13 @@ class Config {
 			throw new ParameterException("Number of image parameters must be 3: width, height, iterations!");
 		}
 
+		if 		(Args.verbose3) this.verbosity = 3;
+		else if (Args.verbose2) this.verbosity = 2;
+		else if (Args.verbose1) this.verbosity = 1;
+		else /*NEED BETTER WAY*/this.verbosity = 0;
+
+		System.out.println(this.verbosity);
+
 		this.width = Args.imageParams.get(0);
 		this.height = Args.imageParams.get(1);
 		this.max_iterations = Args.imageParams.get(2);
@@ -67,11 +74,21 @@ class Config {
 	@SuppressWarnings("FieldMayBeFinal")
 	private static class Args {
 
-		@Parameter(names = {"-h", "--help"}, help = true, description = "Shows the help menu and exits.")
+		@Parameter(names = {"--help"}, help = true, description = "Shows the help menu and exits.")
 		private static boolean help; // todo: figure out why it doesn't print help menu
 
-		@Parameter(names = {"-v", "--version"}, description = "Prints program info and version and exists.")
+		@Parameter(names = {"--version"}, description = "Prints program info and version and exists.")
 		private static boolean showVersion;
+
+
+		@Parameter(names = "-v", description = "Set verbosity level. The more th is flag is included, the more verbose.")
+		private static boolean verbose1;
+
+		@Parameter(names = "-vv", hidden = true)
+		private static boolean verbose2;
+
+		@Parameter(names = "-vvv", hidden = true)
+		private static boolean verbose3;
 
 		@Parameter
 		private static List<Integer> imageParams = new ArrayList<>();
