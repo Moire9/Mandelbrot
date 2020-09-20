@@ -17,20 +17,30 @@ import java.util.regex.Pattern;
 
 class Config {
 
-	final public Spinner<Character> spinner = new Spinner<>('|', '/', '\u2014', '\\');
-	final public int width, height, max_iterations;
-	final public BigDecimal zoom, real, imaginary;
-	final public boolean optimized;
-	final public boolean usePercent;
-	final public String filename;
-	final public ImageInfo info;
-	final public PngWriter writer;
+	public final Spinner<Character> spinner = new Spinner<>('|', '/', '\u2014', '\\');
+
+	public final int width, height, max_iterations;
+	public final BigDecimal zoom, real, imaginary;
+	public final boolean usePercent, optimized;
+	public final String filename;
+	public final ImageInfo info;
+	public final PngWriter writer;
 
 	Config (String[] args) {
 		if (args.length == 0) args = new String[]{"--help"};
-		JCommander.newBuilder().addObject(new Args()).build().parse(args);
+		JCommander jct = JCommander.newBuilder().addObject(new Args()).build();
+		jct.parse(args);
+
+		if (Args.showVersion) {
+			System.out.println("Mandelbrot Generator version @VERSION@. Created by SirNapkin1334. Licensed under GNU " +
+					"GPLv3.\nThe source code is available at https://github.com/SirNapkin1334/Mandelbrot");
+			System.exit(0);
+		}
 
 		if (Args.help) {
+			StringBuilder sb = new StringBuilder();
+			jct.getUsageFormatter().usage(sb); // todo: use custom IUsageFormatter instead of this nonsense
+			System.out.println(sb.toString().replaceAll("\n +Default: false\n", "\n").replaceAll("( {6}.*)\n +(Default: .+)\n", "$1 $2\n"));
 			System.exit(0);
 		}
 
@@ -44,9 +54,10 @@ class Config {
 		this.zoom = Args.zoom;
 		this.real = Args.real;
 		this.imaginary = Args.imaginary;
-		this.optimized = !Args.notSpeedOptimized;
 		this.usePercent = Args.usePercent;
-		this.filename = Args.filename.endsWith(".png") ? Args.filename : new StringBuilder(Args.filename).append(".png").toString();
+		this.optimized = !Args.notSpeedOptimized;
+		this.filename = Args.filename.endsWith(".png") ?
+				Args.filename : new StringBuilder(Args.filename).append(".png").toString();
 
 		this.info = new ImageInfo(this.width, this.height, 8, false);
 		this.writer = new PngWriter(new File(this.filename), this.info, true);
@@ -56,8 +67,11 @@ class Config {
 	@SuppressWarnings("FieldMayBeFinal")
 	private static class Args {
 
-		@Parameter(names = {"-h", "--help"}, help = true, description = "Shows the help menu.")
+		@Parameter(names = {"-h", "--help"}, help = true, description = "Shows the help menu and exits.")
 		private static boolean help; // todo: figure out why it doesn't print help menu
+
+		@Parameter(names = {"-v", "--version"}, description = "Prints program info and version and exists.")
+		private static boolean showVersion;
 
 		@Parameter
 		private static List<Integer> imageParams = new ArrayList<>();
@@ -66,7 +80,7 @@ class Config {
 		private static String filename = "image.png";
 
 		@Parameter(names = {"-O", "--no-optimize"}, description = "Disables speed-optimized mode. Changing the imaginary coordinate will invoke this.")
-		private static boolean notSpeedOptimized = false;
+		private static boolean notSpeedOptimized;
 
 		@Parameter(names = {"-p", "--percent"}, description = "If used, the completeness will be shown in percent of lines, rather than the amount of lines completed.")
 		private static boolean usePercent = false;
