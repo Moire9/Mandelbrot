@@ -1,3 +1,30 @@
+/*
+ * Copyright (C) 2020 SirNapkin1334
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ * The author can be contacted via:
+ * 	Email: sirnapkin@protonmail.com
+ * 	Twitter: @SirNapkin1334
+ * 	Discord: @SirNapkin1334#7960
+ * 	Reddit: u/SirNapkin1334
+ * 	IRC: SirNapkin1334; Registered on Freenode, EFNet, possibly others
+ *
+ * If you wish to use this software in a way violating the terms, please
+ * contact the author, as an exception can be made.
+ */
+
 import org.apache.tools.ant.filters.ReplaceTokens
 
 plugins {
@@ -23,7 +50,7 @@ dependencies {
 	)
 }
 
-compileJava {
+tasks.compileJava {
 	copy {
 		from "src"
 		into "$buildDir/sources/"
@@ -33,20 +60,24 @@ compileJava {
 	source = "$buildDir/sources/main/java"
 }
 
-jar {
-	enabled = false
-	dependsOn shadowJar
-}
-
 tasks.shadowJar {
-	//noinspection GrDeprecatedAPIUsage
-	baseName = rootProject.name.toLowerCase(Locale.ENGLISH)
-	//noinspection GroovyAssignabilityCheck,GroovyAccessibility,GrDeprecatedAPIUsage
-	classifier = archiveVersion = ""
+	archiveFileName = "${rootProject.name.toLowerCase(Locale.ENGLISH)}.jar"
 
 	manifest {
 		attributes (
-				"Main-Class": "$rootProject.group.${rootProject.name.toLowerCase(Locale.ENGLISH)}.Main"
+				"Main-Class": "$rootProject.group.${rootProject.name.toLowerCase(Locale.ENGLISH)}.Main",
+				"Built-By": System.properties["user.name"],
+				"Build-Jdk": System.properties["java.version"],
+				"Implementation-Title": rootProject.name,
+				"Implementation-Version": rootProject.version,
+				"Implementation-Vendor": "Napkin Technologies",
+				"Created-By": "Shadow Jar"
 		)
 	}
+
+	exclude "NOTICE.txt", "LICENSE.txt"
+	from "LICENSE", "COPYRIGHT"
 }
+
+tasks.jar.enabled = false // replaced by shadowJar
+tasks.build.dependsOn tasks.shadowJar

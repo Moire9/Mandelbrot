@@ -1,18 +1,45 @@
+/*
+ * Copyright (C) 2020 SirNapkin1334
+ *
+ * This program is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <https://www.gnu.org/licenses/>.
+ *
+ * The author can be contacted via:
+ * 	Email: sirnapkin@protonmail.com
+ * 	Twitter: @SirNapkin1334
+ * 	Discord: @SirNapkin1334#7960
+ * 	Reddit: u/SirNapkin1334
+ * 	IRC: SirNapkin1334; Registered on Freenode, EFNet, possibly others
+ *
+ * If you wish to use this software in a way violating the terms, please
+ * contact the author, as an exception can be made.
+ */
+
 package tech.napkin.mandelbrot;
 
 import ar.com.hjg.pngj.ImageInfo;
 import ar.com.hjg.pngj.PngWriter;
-import com.beust.jcommander.IParameterValidator;
-import com.beust.jcommander.JCommander;
-import com.beust.jcommander.Parameter;
-import com.beust.jcommander.ParameterException;
+import com.beust.jcommander.*;
 import com.beust.jcommander.converters.BigDecimalConverter;
 
+import java.io.BufferedReader;
 import java.io.File;
+import java.io.InputStreamReader;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 
 class Config {
@@ -28,32 +55,38 @@ class Config {
 
 	Config (String[] args) {
 		if (args.length == 0) args = new String[]{"--help"};
-		JCommander jct = JCommander.newBuilder().addObject(new Args()).build();
+		JCommander jct = new JCommander();
+		jct.addObject(new Args());
 		jct.parse(args);
 
-		if (Args.showVersion) {
-			System.out.println("Mandelbrot Generator version @VERSION@. Created by SirNapkin1334. Licensed under GNU " +
-					"GPLv3.\nThe source code is available at https://github.com/SirNapkin1334/Mandelbrot");
+		if (Args.showHelp) {
+			StringBuilder sb = new StringBuilder();
+			new UnixStyleUsageFormatter(jct).usage(sb);
+			System.out.println(sb.toString());
 			System.exit(0);
 		}
 
-		if (Args.help) {
-			StringBuilder sb = new StringBuilder();
-			jct.getUsageFormatter().usage(sb); // todo: use custom IUsageFormatter instead of this nonsense
-			System.out.println(sb.toString().replaceAll("\n +Default: false\n", "\n").replaceAll("( {6}.*)\n +(Default: .+)\n", "$1 $2\n"));
+		if (Args.showVersion) {
+			System.out.println("Mandelbrot Generator version @VERSION@. " + // replaced by gradle on compilation
+					"Created by SirNapkin1334.\nThe source code is available at " +
+					"https://github.com/SirNapkin1334/Mandelbrot");
 			System.exit(0);
 		}
+
+		if (Args.showCopyright) {
+			System.out.println(new BufferedReader(
+					new InputStreamReader(getClass().getResourceAsStream("/COPYRIGHT"))
+			).lines().collect(Collectors.joining("\n")));
+			System.exit(0);
+		}
+
 
 		if (Args.imageParams.size() != 3) {
 			throw new ParameterException("Number of image parameters must be 3: width, height, iterations!");
 		}
 
-		if 		(Args.verbose3) this.verbosity = 3;
-		else if (Args.verbose2) this.verbosity = 2;
-		else if (Args.verbose1) this.verbosity = 1;
-		else /*NEED BETTER WAY*/this.verbosity = 0;
 
-		System.out.println(this.verbosity);
+		this.verbosity = Args.verbose3 ? 3 : Args.verbose2 ? 2 : Args.verbose1 ? 1 : 0;
 
 		this.width = Args.imageParams.get(0);
 		this.height = Args.imageParams.get(1);
@@ -74,11 +107,14 @@ class Config {
 	@SuppressWarnings("FieldMayBeFinal")
 	private static class Args {
 
-		@Parameter(names = {"--help"}, help = true, description = "Shows the help menu and exits.")
-		private static boolean help; // todo: figure out why it doesn't print help menu
+		@Parameter(names = "--help", help = true, description = "Shows the help menu and exits.")
+		private static boolean showHelp;
 
-		@Parameter(names = {"--version"}, description = "Prints program info and version and exists.")
+		@Parameter(names = "--version", description = "Prints program info and version and exists.")
 		private static boolean showVersion;
+
+		@Parameter(names = "--copyright", description = "Prints copyright/licensing info and exits.")
+		private static boolean showCopyright;
 
 
 		@Parameter(names = "-v", description = "Set verbosity level. The more th is flag is included, the more verbose.")
@@ -89,6 +125,7 @@ class Config {
 
 		@Parameter(names = "-vvv", hidden = true)
 		private static boolean verbose3;
+
 
 		@Parameter
 		private static List<Integer> imageParams = new ArrayList<>();
